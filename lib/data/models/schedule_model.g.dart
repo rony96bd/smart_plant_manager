@@ -16,18 +16,38 @@ class ScheduleModelAdapter extends TypeAdapter<ScheduleModel> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+
+    // Handle backward compatibility: old data has fertilizerId as String
+    List<String> fertilizerIds = [];
+    Map<String, String> doses = {};
+
+    if (fields[2] is List) {
+      // New format: fertilizerIds is already a List
+      fertilizerIds = (fields[2] as List).cast<String>();
+      doses = (fields[3] as Map?)?.cast<String, String>() ?? {};
+    } else if (fields[2] is String) {
+      // Old format: fertilizerId is a String, convert to List
+      final fertilizerId = fields[2] as String;
+      fertilizerIds = [fertilizerId];
+      // For old format, try to get dose from fields[3] if it exists
+      final oldDose = fields[3] as String?;
+      if (oldDose != null && oldDose.isNotEmpty) {
+        doses[fertilizerId] = oldDose;
+      }
+    }
+
     return ScheduleModel(
       id: fields[0] as String,
       plantId: fields[1] as String,
-      fertilizerId: fields[2] as String,
-      dose: fields[3] as String?,
+      fertilizerIds: fertilizerIds,
+      doses: doses,
       notes: fields[4] as String?,
       repeatType: fields[5] as int,
       everyXDays: fields[6] as int?,
       reminderHour: fields[7] as int,
       reminderMinute: fields[8] as int,
       nextScheduleDate: fields[9] as DateTime,
-      isActive: fields[10] as bool,
+      isActive: fields[10] as bool? ?? true,
       createdAt: fields[11] as DateTime,
       updatedAt: fields[12] as DateTime,
     );
@@ -42,9 +62,9 @@ class ScheduleModelAdapter extends TypeAdapter<ScheduleModel> {
       ..writeByte(1)
       ..write(obj.plantId)
       ..writeByte(2)
-      ..write(obj.fertilizerId)
+      ..write(obj.fertilizerIds)
       ..writeByte(3)
-      ..write(obj.dose)
+      ..write(obj.doses)
       ..writeByte(4)
       ..write(obj.notes)
       ..writeByte(5)

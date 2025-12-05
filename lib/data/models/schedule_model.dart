@@ -20,10 +20,10 @@ class ScheduleModel extends HiveObject {
   String plantId;
 
   @HiveField(2)
-  String fertilizerId;
+  List<String> fertilizerIds; // Multiple fertilizers
 
   @HiveField(3)
-  String? dose;
+  Map<String, String> doses; // fertilizerId -> dose mapping
 
   @HiveField(4)
   String? notes;
@@ -55,8 +55,8 @@ class ScheduleModel extends HiveObject {
   ScheduleModel({
     required this.id,
     required this.plantId,
-    required this.fertilizerId,
-    this.dose,
+    required this.fertilizerIds,
+    required this.doses,
     this.notes,
     required this.repeatType,
     this.everyXDays,
@@ -80,8 +80,8 @@ class ScheduleModel extends HiveObject {
   ScheduleModel copyWith({
     String? id,
     String? plantId,
-    String? fertilizerId,
-    String? dose,
+    List<String>? fertilizerIds,
+    Map<String, String>? doses,
     String? notes,
     int? repeatType,
     int? everyXDays,
@@ -95,8 +95,8 @@ class ScheduleModel extends HiveObject {
     return ScheduleModel(
       id: id ?? this.id,
       plantId: plantId ?? this.plantId,
-      fertilizerId: fertilizerId ?? this.fertilizerId,
-      dose: dose ?? this.dose,
+      fertilizerIds: fertilizerIds ?? this.fertilizerIds,
+      doses: doses ?? this.doses,
       notes: notes ?? this.notes,
       repeatType: repeatType ?? this.repeatType,
       everyXDays: everyXDays ?? this.everyXDays,
@@ -113,8 +113,8 @@ class ScheduleModel extends HiveObject {
     return {
       'id': id,
       'plantId': plantId,
-      'fertilizerId': fertilizerId,
-      'dose': dose,
+      'fertilizerIds': fertilizerIds,
+      'doses': doses,
       'notes': notes,
       'repeatType': repeatType,
       'everyXDays': everyXDays,
@@ -131,8 +131,8 @@ class ScheduleModel extends HiveObject {
     return ScheduleModel(
       id: json['id'] as String,
       plantId: json['plantId'] as String,
-      fertilizerId: json['fertilizerId'] as String,
-      dose: json['dose'] as String?,
+      fertilizerIds: (json['fertilizerIds'] as List<dynamic>?)?.cast<String>() ?? [],
+      doses: (json['doses'] as Map<String, dynamic>?)?.cast<String, String>() ?? {},
       notes: json['notes'] as String?,
       repeatType: json['repeatType'] as int,
       everyXDays: json['everyXDays'] as int?,
@@ -144,5 +144,9 @@ class ScheduleModel extends HiveObject {
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
   }
+
+  // Backward compatibility
+  String get fertilizerId => fertilizerIds.isNotEmpty ? fertilizerIds.first : '';
+  String? get dose => doses[fertilizerId];
 }
 

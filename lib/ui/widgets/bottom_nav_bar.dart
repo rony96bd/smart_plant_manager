@@ -40,6 +40,10 @@ class BottomNavBar extends StatelessWidget {
           icon: const Icon(Icons.history),
           label: localizations?.translate('logs') ?? 'Logs',
         ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.settings),
+          label: localizations?.translate('settings') ?? 'Settings',
+        ),
       ],
     );
   }

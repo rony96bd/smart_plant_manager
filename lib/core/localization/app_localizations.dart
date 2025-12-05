@@ -73,6 +73,7 @@ class AppLocalizations {
       'detection_tips': 'Tips: Take clear photos in good lighting. Show the full plant for best results.',
       'detection_result': 'Detection Result',
       'confidence': 'Confidence',
+      'about': 'About',
     },
     'bn': {
       'app_title': 'স্মার্ট প্ল্যান্ট ম্যানেজার',
@@ -135,6 +136,7 @@ class AppLocalizations {
       'detection_tips': 'টিপস: ভাল আলোতে পরিষ্কার ছবি তুলুন। সেরা ফলাফলের জন্য পুরো গাছ দেখান।',
       'detection_result': 'সনাক্তকরণ ফলাফল',
       'confidence': 'আত্মবিশ্বাস',
+      'about': 'সম্পর্কে',
     },
   };
 

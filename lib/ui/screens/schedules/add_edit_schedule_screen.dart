@@ -30,7 +30,8 @@ class _AddEditScheduleScreenState extends ConsumerState<AddEditScheduleScreen> {
   final _notificationService = NotificationService();
 
   String? _selectedPlantId;
-  String? _selectedFertilizerId;
+  List<String> _selectedFertilizerIds = [];
+  Map<String, String> _fertilizerDoses = {};
   RepeatType _repeatType = RepeatType.once;
   DateTime _nextScheduleDate = DateTime.now();
   TimeOfDay _reminderTime = TimeOfDay.now();
@@ -42,12 +43,12 @@ class _AddEditScheduleScreenState extends ConsumerState<AddEditScheduleScreen> {
     super.initState();
     if (widget.schedule != null) {
       _selectedPlantId = widget.schedule!.plantId;
-      _selectedFertilizerId = widget.schedule!.fertilizerId;
+      _selectedFertilizerIds = List.from(widget.schedule!.fertilizerIds);
+      _fertilizerDoses = Map.from(widget.schedule!.doses);
       _repeatType = widget.schedule!.repeatTypeEnum;
       _nextScheduleDate = widget.schedule!.nextScheduleDate;
       _reminderTime = widget.schedule!.reminderTime;
       _isActive = widget.schedule!.isActive;
-      _doseController.text = widget.schedule!.dose ?? '';
       _notesController.text = widget.schedule!.notes ?? '';
       if (widget.schedule!.everyXDays != null) {
         _everyXDaysController.text = widget.schedule!.everyXDays.toString();
@@ -59,7 +60,6 @@ class _AddEditScheduleScreenState extends ConsumerState<AddEditScheduleScreen> {
 
   @override
   void dispose() {
-    _doseController.dispose();
     _notesController.dispose();
     _everyXDaysController.dispose();
     super.dispose();
@@ -123,27 +123,45 @@ class _AddEditScheduleScreenState extends ConsumerState<AddEditScheduleScreen> {
                       future: _fertilizerRepository.getAllFertilizers(),
                       builder: (context, snapshot) {
                         final fertilizers = snapshot.data ?? [];
-                        return DropdownButtonFormField<String>(
-                          initialValue: _selectedFertilizerId,
-                          decoration: InputDecoration(
-                            labelText: localizations?.translate('select_fertilizer') ?? 'Select Fertilizer',
-                            prefixIcon: const Icon(Icons.science),
-                          ),
-                          items: fertilizers.map((fertilizer) {
-                            return DropdownMenuItem(
-                              value: fertilizer.id,
-                              child: Text(fertilizer.name),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() => _selectedFertilizerId = value);
-                          },
-                          validator: (value) {
-                            if (value == null) {
-                              return 'Please select a fertilizer';
-                            }
-                            return null;
-                          },
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              localizations?.translate('select_fertilizer') ?? 'Select Fertilizers',
+                              style: Theme.of(context).textTheme.titleSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: fertilizers.map((fertilizer) {
+                                final isSelected = _selectedFertilizerIds.contains(fertilizer.id);
+                                return FilterChip(
+                                  label: Text(fertilizer.name),
+                                  selected: isSelected,
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        _selectedFertilizerIds.add(fertilizer.id);
+                                        _fertilizerDoses[fertilizer.id] = '';
+                                      } else {
+                                        _selectedFertilizerIds.remove(fertilizer.id);
+                                        _fertilizerDoses.remove(fertilizer.id);
+                                      }
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                            if (_selectedFertilizerIds.isEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  'Please select at least one fertilizer',
+                                  style: TextStyle(color: Colors.red, fontSize: 12),
+                                ),
+                              ),
+                          ],
                         );
                       },
                     ),
@@ -288,6 +306,12 @@ class _AddEditScheduleScreenState extends ConsumerState<AddEditScheduleScreen> {
 
   Future<void> _saveSchedule() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedFertilizerIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one fertilizer')),
+      );
+      return;
+    }
     if (_repeatType == RepeatType.everyXDays) {
       if (_everyXDaysController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -304,8 +328,8 @@ class _AddEditScheduleScreenState extends ConsumerState<AddEditScheduleScreen> {
       final schedule = ScheduleModel(
         id: widget.schedule?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         plantId: _selectedPlantId!,
-        fertilizerId: _selectedFertilizerId!,
-        dose: _doseController.text.trim().isEmpty ? null : _doseController.text.trim(),
+        fertilizerIds: _selectedFertilizerIds,
+        doses: _fertilizerDoses,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         repeatType: _repeatType.index,
         everyXDays: _repeatType == RepeatType.everyXDays

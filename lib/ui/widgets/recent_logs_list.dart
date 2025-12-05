@@ -44,19 +44,25 @@ class RecentLogsList extends ConsumerWidget {
           itemBuilder: (context, index) {
             final log = logs[index];
             return FutureBuilder(
-              future: Future.wait([
-                plantRepository.getPlantById(log.plantId),
-                fertilizerRepository.getFertilizerById(log.fertilizerId),
-              ]),
+                future: Future.wait([
+                  plantRepository.getPlantById(log.plantId),
+                  fertilizerRepository.getAllFertilizers(),
+                ]),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const SizedBox.shrink();
                 }
 
                 final plant = snapshot.data![0] as dynamic;
-                final fertilizer = snapshot.data![1] as dynamic;
+                final fertilizers = snapshot.data![1] as List<dynamic>;
 
-                if (plant == null || fertilizer == null) {
+                if (plant == null) {
+                  return const SizedBox.shrink();
+                }
+
+                // Get fertilizer for this log
+                final logFertilizer = fertilizers.where((f) => f.id == log.fertilizerId).firstOrNull;
+                if (logFertilizer == null) {
                   return const SizedBox.shrink();
                 }
 
@@ -64,10 +70,14 @@ class RecentLogsList extends ConsumerWidget {
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: const Icon(Icons.check_circle, color: Colors.green),
-                    title: Text('${plant.name} - ${fertilizer.name}'),
-                    subtitle: Text(
-                      DateFormat('MMM dd, yyyy • HH:mm').format(log.appliedAt),
-                    ),
+                    title: Text('${plant.name} - ${logFertilizer.name}'),
+                    subtitle:                           Text(
+                            DateFormat('MMM dd, yyyy • HH:mm').format(log.appliedAt),
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 12,
+                            ),
+                          ),
                     trailing: log.dose != null
                         ? Chip(
                             label: Text(log.dose!),

@@ -6,7 +6,7 @@ import '../../../data/repositories/fertilizer_repository.dart';
 import '../../../data/models/schedule_model.dart';
 import '../../../core/localization/app_localizations.dart';
 import '../../../core/notifications/notification_service.dart';
-import 'package:intl/intl.dart';
+import '../../../core/utils/schedule_display_helper.dart';
 import 'add_edit_schedule_screen.dart';
 
 class SchedulesListScreen extends ConsumerStatefulWidget {
@@ -60,7 +60,7 @@ class _SchedulesListScreenState extends ConsumerState<SchedulesListScreen> {
               return FutureBuilder(
                 future: Future.wait([
                   plantRepository.getPlantById(schedule.plantId),
-                  fertilizerRepository.getFertilizerById(schedule.fertilizerId),
+                  fertilizerRepository.getAllFertilizers(),
                 ]),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
@@ -68,11 +68,19 @@ class _SchedulesListScreenState extends ConsumerState<SchedulesListScreen> {
                   }
 
                   final plant = snapshot.data![0] as dynamic;
-                  final fertilizer = snapshot.data![1] as dynamic;
+                  final allFertilizers = snapshot.data![1] as List<dynamic>;
 
-                  if (plant == null || fertilizer == null) {
+                  if (plant == null) {
                     return const SizedBox.shrink();
                   }
+
+                  // Get all fertilizers for this schedule
+                  final scheduleFertilizers = allFertilizers.where((f) => schedule.fertilizerIds.contains(f.id)).toList();
+                  if (scheduleFertilizers.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final fertilizerNames = scheduleFertilizers.map((f) => f.name).join(', ');
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -81,14 +89,31 @@ class _SchedulesListScreenState extends ConsumerState<SchedulesListScreen> {
                         schedule.isActive ? Icons.notifications_active : Icons.notifications_off,
                         color: schedule.isActive ? Colors.green : Colors.grey,
                       ),
-                      title: Text('${plant.name} - ${fertilizer.name}'),
+                      title: Text('${plant.name} - $fertilizerNames'),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Next: ${DateFormat('MMM dd, yyyy • HH:mm').format(schedule.nextScheduleDate)}',
+                            ScheduleDisplayHelper.getRemainingTimeText(
+                              schedule.nextScheduleDate,
+                              locale: Localizations.localeOf(context).languageCode,
+                            ),
+                            style: TextStyle(
+                              color: ScheduleDisplayHelper.getRemainingTimeColor(schedule.nextScheduleDate),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                          if (schedule.dose != null) Text('Dose: ${schedule.dose}'),
+                          // Show doses for each fertilizer
+                          ...scheduleFertilizers.map((fertilizer) {
+                            final dose = schedule.doses[fertilizer.id];
+                            if (dose != null && dose.isNotEmpty) {
+                              return Text(
+                                '${fertilizer.name}: ${dose}',
+                                style: TextStyle(fontSize: 12),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          }).whereType<Widget>(),
                         ],
                       ),
                       trailing: PopupMenuButton(

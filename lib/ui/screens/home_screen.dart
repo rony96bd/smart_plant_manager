@@ -24,6 +24,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const FertilizersListScreen(),
     const SchedulesListScreen(),
     const LogsListScreen(),
+    const SettingsScreen(),
   ];
 
   @override

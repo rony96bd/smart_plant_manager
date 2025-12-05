@@ -5,7 +5,7 @@ import '../../data/repositories/plant_repository.dart';
 import '../../data/repositories/fertilizer_repository.dart';
 import '../../data/models/schedule_model.dart';
 import '../../core/localization/app_localizations.dart';
-import 'package:intl/intl.dart';
+import '../../core/utils/schedule_display_helper.dart';
 
 class UpcomingRemindersList extends ConsumerWidget {
   const UpcomingRemindersList({super.key});
@@ -47,30 +47,45 @@ class UpcomingRemindersList extends ConsumerWidget {
           itemBuilder: (context, index) {
             final schedule = schedules[index];
             return FutureBuilder(
-              future: Future.wait([
-                plantRepository.getPlantById(schedule.plantId),
-                fertilizerRepository.getFertilizerById(schedule.fertilizerId),
-              ]),
+                future: Future.wait([
+                  plantRepository.getPlantById(schedule.plantId),
+                  fertilizerRepository.getAllFertilizers(),
+                ]),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const SizedBox.shrink();
                 }
 
                 final plant = snapshot.data![0] as dynamic;
-                final fertilizer = snapshot.data![1] as dynamic;
+                final fertilizers = snapshot.data![1] as List<dynamic>;
 
-                if (plant == null || fertilizer == null) {
+                if (plant == null) {
                   return const SizedBox.shrink();
                 }
+
+                // Get fertilizers for this schedule
+                final scheduleFertilizers = fertilizers.where((f) => schedule.fertilizerIds.contains(f.id)).toList();
+                if (scheduleFertilizers.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                final fertilizerNames = scheduleFertilizers.map((f) => f.name).join(', ');
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: const Icon(Icons.notifications_active),
-                    title: Text('${plant.name} - ${fertilizer.name}'),
-                    subtitle: Text(
-                      DateFormat('MMM dd, yyyy • HH:mm').format(schedule.nextScheduleDate),
-                    ),
+                    title: Text('${plant.name} - $fertilizerNames'),
+                      subtitle: Text(
+                        ScheduleDisplayHelper.getRemainingTimeText(
+                          schedule.nextScheduleDate,
+                          locale: Localizations.localeOf(context).languageCode,
+                        ),
+                        style: TextStyle(
+                          color: ScheduleDisplayHelper.getRemainingTimeColor(schedule.nextScheduleDate),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     trailing: schedule.dose != null
                         ? Chip(
                             label: Text(schedule.dose!),
