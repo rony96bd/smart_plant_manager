@@ -62,6 +62,12 @@ dependencies:
   # File handling
   path: ^1.9.0
 
+  # File sharing
+  share_plus: ^10.0.2
+
+  # File picker
+  file_picker: ^8.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -74,6 +74,13 @@ class AppLocalizations {
       'detection_result': 'Detection Result',
       'confidence': 'Confidence',
       'about': 'About',
+      'backup_restore': 'Backup & Restore',
+      'data_summary': 'Data Summary',
+      'create_backup': 'Create Backup',
+      'restore_backup': 'Restore Backup',
+      'backup_created': 'Backup created successfully',
+      'restore_warning': 'This will add data from the backup file. Existing data will remain. Continue?',
+      'restore': 'Restore',
     },
     'bn': {
       'app_title': 'স্মার্ট প্ল্যান্ট ম্যানেজার',
@@ -137,6 +144,13 @@ class AppLocalizations {
       'detection_result': 'সনাক্তকরণ ফলাফল',
       'confidence': 'আত্মবিশ্বাস',
       'about': 'সম্পর্কে',
+      'backup_restore': 'ব্যাকআপ ও রিস্টোর',
+      'data_summary': 'ডেটা সারাংশ',
+      'create_backup': 'ব্যাকআপ তৈরি করুন',
+      'restore_backup': 'ব্যাকআপ রিস্টোর করুন',
+      'backup_created': 'ব্যাকআপ সফলভাবে তৈরি হয়েছে',
+      'restore_warning': 'এটি ব্যাকআপ ফাইল থেকে ডেটা যোগ করবে। বিদ্যমান ডেটা অপরিবর্তিত থাকবে। চালিয়ে যাবেন?',
+      'restore': 'রিস্টোর',
     },
   };
 
