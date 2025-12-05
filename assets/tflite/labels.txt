@@ -1,0 +1,13 @@
+Flower
+Fruit
+Indoor
+Outdoor
+Bonsai
+Cactus
+Vegetable
+Tree
+Leaf
+Plant
+Herb
+Shrub
+
