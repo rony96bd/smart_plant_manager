@@ -14,12 +14,8 @@ class FertilizerRepository {
     return _box.values.where((fertilizer) {
       return fertilizer.name.toLowerCase().contains(lowerQuery) ||
           fertilizer.type.toLowerCase().contains(lowerQuery) ||
-          (fertilizer.usageRecommendations?.toLowerCase().contains(lowerQuery) ?? false);
+          (fertilizer.ratio?.toLowerCase().contains(lowerQuery) ?? false);
     }).toList();
-  }
-
-  Future<List<FertilizerModel>> filterByType(String type) async {
-    return _box.values.where((fertilizer) => fertilizer.type == type).toList();
   }
 
   Future<FertilizerModel?> getFertilizerById(String id) async {
@@ -42,4 +38,3 @@ class FertilizerRepository {
     return _box.watch().map((_) => _box.values.toList());
   }
 }
-

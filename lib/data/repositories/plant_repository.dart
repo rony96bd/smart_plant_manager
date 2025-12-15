@@ -34,12 +34,30 @@ class PlantRepository {
     await _box.put(plant.id, plant);
   }
 
-  Future<void> deletePlant(String id) async {
-    await _box.delete(id);
+  Future<void> deletePlant(String plantId) async {
+    // First, delete associated schedules
+    final schedulesToDelete = HiveService.schedulesBox.values
+        .where((schedule) => schedule.plantId == plantId)
+        .map((schedule) => schedule.id)
+        .toList();
+    for (final scheduleId in schedulesToDelete) {
+      await HiveService.schedulesBox.delete(scheduleId);
+    }
+
+    // Then, delete associated logs
+    final logsToDelete = HiveService.logsBox.values
+        .where((log) => log.plantId == plantId)
+        .map((log) => log.id)
+        .toList();
+    for (final logId in logsToDelete) {
+      await HiveService.logsBox.delete(logId);
+    }
+
+    // Finally, delete the plant itself
+    await _box.delete(plantId);
   }
 
   Stream<List<PlantModel>> watchPlants() {
     return _box.watch().map((_) => _box.values.toList());
   }
 }
-

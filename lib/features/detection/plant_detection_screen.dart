@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/utils/constants.dart';
 import 'tflite_service.dart';
+import '../../core/services/permission_service.dart';
 
 class PlantDetectionScreen extends StatefulWidget {
   const PlantDetectionScreen({super.key});
@@ -36,6 +37,26 @@ class _PlantDetectionScreenState extends State<PlantDetectionScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    bool hasPermission = true;
+    if (source == ImageSource.camera) {
+      hasPermission = await PermissionService.requestCameraPermission();
+    }
+
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Camera permission is required.'),
+            action: SnackBarAction(
+              label: 'Settings',
+              onPressed: () => PermissionService.openAppSettings(),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     try {
       final image = await _imagePicker.pickImage(source: source);
       if (image != null) {
@@ -96,12 +117,12 @@ class _PlantDetectionScreenState extends State<PlantDetectionScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        localizations?.translate('model_not_loaded_message') ?? 
-                        'Please add model.tflite to assets/tflite/ folder.\n\n'
-                        'You can download free plant classification models from:\n'
-                        '• TensorFlow Hub\n'
-                        '• Kaggle\n'
-                        '• Model Zoo',
+                        localizations?.translate('model_not_loaded_message') ??
+                            'Please add model.tflite to assets/tflite/ folder.\n\n'
+                                'You can download free plant classification models from:\n'
+                                '• TensorFlow Hub\n'
+                                '• Kaggle\n'
+                                '• Model Zoo',
                         style: Theme.of(context).textTheme.bodySmall,
                         textAlign: TextAlign.center,
                       ),
@@ -120,8 +141,8 @@ class _PlantDetectionScreenState extends State<PlantDetectionScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          localizations?.translate('detection_tips') ?? 
-                          'Tips: Take clear photos in good lighting. Show the full plant for best results.',
+                          localizations?.translate('detection_tips') ??
+                              'Tips: Take clear photos in good lighting. Show the full plant for best results.',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -198,8 +219,8 @@ class _PlantDetectionScreenState extends State<PlantDetectionScreen> {
                                 Text(
                                   '${localizations?.translate('confidence') ?? 'Confidence'}: ${((_prediction!['confidence'] ?? 0.0) * 100).toStringAsFixed(1)}%',
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
+                                        color: Colors.grey[600],
+                                      ),
                                 ),
                               ],
                             ),
@@ -263,4 +284,3 @@ class _PlantDetectionScreenState extends State<PlantDetectionScreen> {
     return 'Other';
   }
 }
-

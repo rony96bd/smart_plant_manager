@@ -30,7 +30,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset('assets/images/App_Logo.png', height: 32),
+            const SizedBox(width: 8),
+            const Text('Smart Plant Manager'),
+          ],
+        ),
+        centerTitle: true,
+      ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -42,4 +56,3 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 }
-

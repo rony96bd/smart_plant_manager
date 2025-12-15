@@ -1,17 +1,20 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/localization/locale_provider.dart';
 import '../../core/theme/theme_provider.dart';
 import '../../core/services/backup_service.dart';
-import 'package:file_picker/file_picker.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final isDarkMode = ref.watch(themeProvider);
     final locale = ref.watch(localeProvider);
@@ -50,7 +53,6 @@ class SettingsScreen extends ConsumerWidget {
             children: [
               RadioListTile<Locale>(
                 title: const Text('English'),
-                subtitle: const Text('English (Default)'),
                 value: const Locale('en'),
                 groupValue: locale,
                 onChanged: (value) {
@@ -61,7 +63,6 @@ class SettingsScreen extends ConsumerWidget {
               ),
               RadioListTile<Locale>(
                 title: const Text('বাংলা'),
-                subtitle: const Text('Bangla'),
                 value: const Locale('bn'),
                 groupValue: locale,
                 onChanged: (value) {
@@ -78,20 +79,20 @@ class SettingsScreen extends ConsumerWidget {
           ExpansionTile(
             leading: const Icon(Icons.backup),
             title: Text(localizations?.translate('backup_restore') ?? 'Backup & Restore'),
-            subtitle: const Text('Export/Import app data'),
+            subtitle: Text(localizations?.translate('backup_restore_subtitle') ?? 'Export/Import app data'),
+            initiallyExpanded: true,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    FutureBuilder(
+                    FutureBuilder<Map<String, int>>(
                       future: BackupService.getBackupStats(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
+                          return const Center(child: CircularProgressIndicator());
                         }
-
                         final stats = snapshot.data ?? {};
                         return Card(
                           child: Padding(
@@ -104,10 +105,10 @@ class SettingsScreen extends ConsumerWidget {
                                   style: Theme.of(context).textTheme.titleSmall,
                                 ),
                                 const SizedBox(height: 8),
-                                Text('Plants: ${stats['plants'] ?? 0}'),
-                                Text('Fertilizers: ${stats['fertilizers'] ?? 0}'),
-                                Text('Schedules: ${stats['schedules'] ?? 0}'),
-                                Text('Logs: ${stats['logs'] ?? 0}'),
+                                Text('${localizations?.translate('plants') ?? 'Plants'}: ${stats['plants'] ?? 0}'),
+                                Text('${localizations?.translate('fertilizers') ?? 'Fertilizers'}: ${stats['fertilizers'] ?? 0}'),
+                                Text('${localizations?.translate('schedules') ?? 'Schedules'}: ${stats['schedules'] ?? 0}'),
+                                Text('${localizations?.translate('logs') ?? 'Logs'}: ${stats['logs'] ?? 0}'),
                               ],
                             ),
                           ),
@@ -117,13 +118,13 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () => _createBackup(context),
-                      icon: const Icon(Icons.backup),
+                      icon: const Icon(Icons.cloud_upload_outlined),
                       label: Text(localizations?.translate('create_backup') ?? 'Create Backup'),
                     ),
                     const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: () => _restoreBackup(context),
-                      icon: const Icon(Icons.restore),
+                      icon: const Icon(Icons.cloud_download_outlined),
                       label: Text(localizations?.translate('restore_backup') ?? 'Restore Backup'),
                     ),
                   ],
@@ -143,7 +144,7 @@ class SettingsScreen extends ConsumerWidget {
                 context: context,
                 applicationName: localizations?.translate('app_title') ?? 'Smart Plant Manager',
                 applicationVersion: '1.0.0',
-                applicationIcon: const Icon(Icons.local_florist, size: 48),
+                applicationIcon: Image.asset('assets/images/App_Icon.png', height: 48),
               );
             },
           ),
@@ -154,17 +155,30 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _createBackup(BuildContext context) async {
     try {
-      await BackupService.createBackup();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)?.translate('backup_created') ?? 'Backup created successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      final path = await BackupService.createAndSaveBackup();
+      if (!mounted) return;
+
+      if (path != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppLocalizations.of(context)?.translate('backup_created_successfully_at') ?? 'Backup saved to'}: $path'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        setState(() {}); // Refresh UI
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)?.translate('backup_cancelled') ?? 'Backup cancelled by user.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Backup failed: $e'),
+          content: Text('${AppLocalizations.of(context)?.translate('backup_failed') ?? 'Backup failed'}: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -173,72 +187,65 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _restoreBackup(BuildContext context) async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
+      if (!mounted) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(AppLocalizations.of(context)?.translate('restore_backup') ?? 'Restore Backup'),
+          content: Text(
+            AppLocalizations.of(context)?.translate('restore_warning_destructive') ??
+                'This will REPLACE all current data with the data from the backup file. This action cannot be undone. Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(AppLocalizations.of(context)?.translate('restore') ?? 'Restore'),
+            ),
+          ],
+        ),
       );
 
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final jsonData = await file.readAsString();
+      if (confirmed != true) return;
 
-        if (!BackupService.validateBackupFile(jsonData)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invalid backup file format'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
+      final stats = await BackupService.restoreFromBackup();
+      if (!mounted) return;
 
-        // Show confirmation dialog
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(AppLocalizations.of(context)?.translate('restore_backup') ?? 'Restore Backup'),
+      if (stats != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
             content: Text(
-              AppLocalizations.of(context)?.translate('restore_warning') ??
-              'This will add data from the backup file. Existing data will remain. Continue?',
+              '${AppLocalizations.of(context)?.translate('backup_restored') ?? 'Backup restored!'}\n'
+              '${AppLocalizations.of(context)?.translate('plants') ?? 'Plants'}: ${stats['plants']}, '
+              '${AppLocalizations.of(context)?.translate('fertilizers') ?? 'Fertilizers'}: ${stats['fertilizers']}, '
+              '${AppLocalizations.of(context)?.translate('schedules') ?? 'Schedules'}: ${stats['schedules']}, '
+              '${AppLocalizations.of(context)?.translate('logs') ?? 'Logs'}: ${stats['logs']}',
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(AppLocalizations.of(context)?.translate('restore') ?? 'Restore'),
-              ),
-            ],
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 5),
           ),
         );
-
-        if (confirmed == true) {
-          final stats = await BackupService.importData(jsonData);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Backup restored!\n'
-                'Plants: ${stats['plants']}, '
-                'Fertilizers: ${stats['fertilizers']}, '
-                'Schedules: ${stats['schedules']}, '
-                'Logs: ${stats['logs']}'
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
+        setState(() {}); // Refresh UI
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)?.translate('restore_cancelled') ?? 'Restore cancelled by user.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Restore failed: $e'),
+          content: Text('${AppLocalizations.of(context)?.translate('restore_failed') ?? 'Restore failed'}: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 }
-

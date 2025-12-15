@@ -20,16 +20,17 @@ class PlantDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PlantDetailScreenState extends ConsumerState<PlantDetailScreen> {
+  final PlantRepository _plantRepository = PlantRepository();
+
   @override
   Widget build(BuildContext context) {
-    final plantRepository = PlantRepository();
     final scheduleRepository = ScheduleRepository();
     final logRepository = FertilizerLogRepository();
     final localizations = AppLocalizations.of(context);
 
     return Scaffold(
       body: FutureBuilder<PlantModel?>(
-        future: plantRepository.getPlantById(widget.plantId),
+        future: _plantRepository.getPlantById(widget.plantId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -37,7 +38,19 @@ class _PlantDetailScreenState extends ConsumerState<PlantDetailScreen> {
 
           if (!snapshot.hasData || snapshot.data == null) {
             return Center(
-              child: Text(localizations?.translate('no_plants') ?? 'Plant not found'),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48),
+                  const SizedBox(height: 16),
+                  Text(localizations?.translate('plant_not_found') ?? 'Plant not found'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(localizations?.translate('go_back') ?? 'Go Back'),
+                  )
+                ],
+              ),
             );
           }
 
@@ -46,34 +59,53 @@ class _PlantDetailScreenState extends ConsumerState<PlantDetailScreen> {
           return CustomScrollView(
             slivers: [
               SliverAppBar(
-                expandedHeight: 200,
+                expandedHeight: 300,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
+                  title: Text(plant.name, style: const TextStyle(shadows: [Shadow(blurRadius: 8)])),
                   background: plant.imagePath != null
-                      ? Image.file(
-                          File(plant.imagePath!),
-                          fit: BoxFit.cover,
+                      ? Hero(
+                          tag: 'plant_image_${plant.id}',
+                          child: Image.file(
+                            File(plant.imagePath!),
+                            fit: BoxFit.cover,
+                            color: Colors.black.withOpacity(0.3),
+                            colorBlendMode: BlendMode.darken,
+                          ),
                         )
                       : Container(
-                          color: Colors.green[100],
-                          child: const Icon(Icons.local_florist, size: 80),
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          child: Icon(Icons.local_florist, size: 120, color: Theme.of(context).colorScheme.onPrimaryContainer),
                         ),
                 ),
                 actions: [
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AddEditPlantScreen(plant: plant),
-                        ),
-                      ).then((_) {
-                        if (mounted) {
-                          setState(() {});
-                        }
-                      });
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AddEditPlantScreen(plant: plant),
+                          ),
+                        ).then((_) {
+                          if (mounted) {
+                            setState(() {});
+                          }
+                        });
+                      } else if (value == 'delete') {
+                        _showDeleteConfirmationDialog(context, plant);
+                      }
                     },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Text(localizations?.translate('edit') ?? 'Edit'),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Text(localizations?.translate('delete') ?? 'Delete'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -210,5 +242,71 @@ class _PlantDetailScreenState extends ConsumerState<PlantDetailScreen> {
       ),
     );
   }
-}
 
+  Future<void> _deletePlant(PlantModel plant) async {
+    try {
+      await _plantRepository.deletePlant(plant.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)?.translate('plant_deleted') ?? 'Plant deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Pop screen and return 'deleted' to signal a refresh
+        Navigator.of(context).pop('deleted');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppLocalizations.of(context)?.translate('delete_failed') ?? 'Failed to delete plant'}: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, PlantModel plant) {
+    final localizations = AppLocalizations.of(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          title: Text(localizations?.translate('delete_plant') ?? 'Delete Plant'),
+          content: RichText(
+            text: TextSpan(
+              style: Theme.of(context).textTheme.bodyMedium,
+              children: <TextSpan>[
+                TextSpan(text: localizations?.translate('delete_plant_confirm') ?? 'Are you sure you want to delete'),
+                TextSpan(text: ' \'${plant.name}\'?', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const TextSpan(text: '\n\n'),
+                TextSpan(text: localizations?.translate('delete_plant_associated_data') ?? 'All associated schedules and logs will also be deleted.'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(localizations?.translate('cancel') ?? 'Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _deletePlant(plant);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: Text(
+                localizations?.translate('delete') ?? 'Delete',
+                style: TextStyle(color: Theme.of(context).colorScheme.onError),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}

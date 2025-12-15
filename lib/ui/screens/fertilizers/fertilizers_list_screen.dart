@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/repositories/fertilizer_repository.dart';
 import '../../../data/models/fertilizer_model.dart';
 import '../../../core/localization/app_localizations.dart';
-import '../../../core/utils/constants.dart';
 import 'add_edit_fertilizer_screen.dart';
 
 class FertilizersListScreen extends ConsumerStatefulWidget {
@@ -57,10 +56,8 @@ class _FertilizersListScreenState extends ConsumerState<FertilizersListScreen> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<FertilizerModel>>(
-              future: _searchQuery.isNotEmpty
-                  ? _repository.searchFertilizers(_searchQuery)
-                  : _repository.getAllFertilizers(),
+            child: StreamBuilder<List<FertilizerModel>>(
+              stream: _repository.watchFertilizers(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -72,12 +69,18 @@ class _FertilizersListScreenState extends ConsumerState<FertilizersListScreen> {
                   );
                 }
 
-                final fertilizers = snapshot.data ?? [];
+                var fertilizers = snapshot.data ?? [];
+
+                if (_searchQuery.isNotEmpty) {
+                  fertilizers = fertilizers
+                      .where((f) => f.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+                      .toList();
+                }
 
                 if (fertilizers.isEmpty) {
                   return Center(
                     child: Text(
-                      localizations?.translate('no_fertilizers') ?? 'No fertilizers yet',
+                      localizations?.translate('no_fertilizers_or_no_results') ?? 'No fertilizers found',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   );
@@ -91,7 +94,7 @@ class _FertilizersListScreenState extends ConsumerState<FertilizersListScreen> {
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
-                        leading: const Icon(Icons.science, size: 40),
+                        leading: const Icon(Icons.science_outlined, size: 40),
                         title: Text(fertilizer.name),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,32 +104,29 @@ class _FertilizersListScreenState extends ConsumerState<FertilizersListScreen> {
                           ],
                         ),
                         trailing: PopupMenuButton(
+                          onSelected: (value) {
+                             if (value == 'edit') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AddEditFertilizerScreen(fertilizer: fertilizer),
+                                ),
+                              ).then((_) => setState(() {}));
+                            } else if (value == 'delete') {
+                              _deleteFertilizer(context, fertilizer);
+                            }
+                          },
                           itemBuilder: (context) => [
                             PopupMenuItem(
+                              value: 'edit',
                               child: Text(localizations?.translate('edit') ?? 'Edit'),
-                              onTap: () {
-                                Future.delayed(
-                                  const Duration(milliseconds: 100),
-                                  () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => AddEditFertilizerScreen(fertilizer: fertilizer),
-                                        ),
-                                      ).then((_) => setState(() {})),
-                                );
-                              },
                             ),
                             PopupMenuItem(
+                              value: 'delete',
                               child: Text(
                                 localizations?.translate('delete') ?? 'Delete',
                                 style: const TextStyle(color: Colors.red),
                               ),
-                              onTap: () {
-                                Future.delayed(
-                                  const Duration(milliseconds: 100),
-                                  () => _deleteFertilizer(context, fertilizer.id),
-                                );
-                              },
                             ),
                           ],
                         ),
@@ -153,22 +153,33 @@ class _FertilizersListScreenState extends ConsumerState<FertilizersListScreen> {
     );
   }
 
-  Future<void> _deleteFertilizer(BuildContext context, String id) async {
+  Future<void> _deleteFertilizer(BuildContext context, FertilizerModel fertilizer) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)?.translate('delete') ?? 'Delete'),
-        content: const Text('Are you sure you want to delete this fertilizer?'),
+        title: Text(AppLocalizations.of(context)?.translate('delete_fertilizer') ?? 'Delete Fertilizer'),
+        content: RichText(
+            text: TextSpan(
+              style: Theme.of(context).textTheme.bodyMedium,
+              children: <TextSpan>[
+                TextSpan(text: AppLocalizations.of(context)?.translate('delete_fertilizer_confirm') ?? 'Are you sure you want to delete'),
+                TextSpan(text: ' \'${fertilizer.name}\'?', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(AppLocalizations.of(context)?.translate('cancel') ?? 'Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+             style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
             child: Text(
               AppLocalizations.of(context)?.translate('delete') ?? 'Delete',
-              style: const TextStyle(color: Colors.red),
+               style: TextStyle(color: Theme.of(context).colorScheme.onError),
             ),
           ),
         ],
@@ -176,14 +187,20 @@ class _FertilizersListScreenState extends ConsumerState<FertilizersListScreen> {
     );
 
     if (confirmed == true) {
-      await _repository.deleteFertilizer(id);
-      if (context.mounted) {
-        setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Fertilizer deleted')),
-        );
+      try {
+        await _repository.deleteFertilizer(fertilizer.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)?.translate('fertilizer_deleted') ?? 'Fertilizer deleted'), backgroundColor: Colors.green,),
+          );
+        }
+      } catch (e) {
+         if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${AppLocalizations.of(context)?.translate('delete_failed') ?? 'Failed to delete fertilizer'}: $e'), backgroundColor: Colors.red,),
+          );
+        }
       }
     }
   }
 }
-
