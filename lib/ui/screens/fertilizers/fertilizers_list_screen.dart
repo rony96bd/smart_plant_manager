@@ -80,7 +80,7 @@ class _FertilizersListScreenState extends ConsumerState<FertilizersListScreen> {
                 if (fertilizers.isEmpty) {
                   return Center(
                     child: Text(
-                      localizations?.translate('no_fertilizers_or_no_results') ?? 'No fertilizers found',
+                      localizations?.translate('no_fertilizers_found') ?? 'No fertilizers found',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   );

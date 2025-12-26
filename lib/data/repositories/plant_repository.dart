@@ -57,7 +57,10 @@ class PlantRepository {
     await _box.delete(plantId);
   }
 
-  Stream<List<PlantModel>> watchPlants() {
-    return _box.watch().map((_) => _box.values.toList());
+  Stream<List<PlantModel>> watchPlants() async* {
+    yield _box.values.toList();
+    await for (final _ in _box.watch()) {
+      yield _box.values.toList();
+    }
   }
 }

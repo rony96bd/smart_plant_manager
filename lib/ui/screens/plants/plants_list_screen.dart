@@ -18,8 +18,15 @@ class PlantsListScreen extends ConsumerStatefulWidget {
 class _PlantsListScreenState extends ConsumerState<PlantsListScreen> {
   final PlantRepository _repository = PlantRepository();
   final TextEditingController _searchController = TextEditingController();
+  late Stream<List<PlantModel>> _plantsStream;
   String _searchQuery = '';
   String? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    _plantsStream = _repository.watchPlants();
+  }
 
   @override
   void dispose() {
@@ -67,9 +74,9 @@ class _PlantsListScreenState extends ConsumerState<PlantsListScreen> {
           ),
           Expanded(
             child: StreamBuilder<List<PlantModel>>(
-              stream: _repository.watchPlants(),
+              stream: _plantsStream,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
@@ -92,7 +99,7 @@ class _PlantsListScreenState extends ConsumerState<PlantsListScreen> {
                 if (plants.isEmpty) {
                   return Center(
                     child: Text(
-                      localizations?.translate('no_plants_or_no_results') ?? 'No plants found',
+                      localizations?.translate('no_plants_found') ?? 'No plants found',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   );
@@ -124,7 +131,7 @@ class _PlantsListScreenState extends ConsumerState<PlantsListScreen> {
                                 MaterialPageRoute(
                                   builder: (context) => AddEditPlantScreen(plant: plant),
                                 ),
-                              ).then((_) => setState(() {}));
+                              );
                             } else if (value == 'delete') {
                               _showDeleteConfirmationDialog(context, plant);
                             }
@@ -146,11 +153,7 @@ class _PlantsListScreenState extends ConsumerState<PlantsListScreen> {
                             MaterialPageRoute(
                               builder: (context) => PlantDetailScreen(plantId: plant.id),
                             ),
-                          ).then((result) {
-                            if (result == 'deleted') {
-                              setState(() {}); 
-                            }
-                          });
+                          );
                         },
                       ),
                     );
@@ -168,7 +171,7 @@ class _PlantsListScreenState extends ConsumerState<PlantsListScreen> {
             MaterialPageRoute(
               builder: (context) => const AddEditPlantScreen(),
             ),
-          ).then((_) => setState(() {}));
+          );
         },
         child: const Icon(Icons.add),
       ),
@@ -177,12 +180,11 @@ class _PlantsListScreenState extends ConsumerState<PlantsListScreen> {
 
   Future<void> _deletePlant(String plantId) async {
     try {
-      await _repository.deletePlant(plantId); 
+      await _repository.deletePlant(plantId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppLocalizations.of(context)?.translate('plant_deleted') ?? 'Plant deleted successfully'), backgroundColor: Colors.green),
         );
-        setState(() {}); 
       }
     } catch (e) {
       if (mounted) {

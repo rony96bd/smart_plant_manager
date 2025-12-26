@@ -7,7 +7,7 @@ import 'core/theme/theme_provider.dart';
 import 'core/localization/app_localizations.dart';
 import 'core/localization/locale_provider.dart';
 import 'core/notifications/notification_service.dart';
-import 'ui/screens/home_screen.dart';
+import 'ui/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,7 +46,7 @@ class MyApp extends ConsumerWidget {
         Locale('en', ''),
         Locale('bn', ''),
       ],
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

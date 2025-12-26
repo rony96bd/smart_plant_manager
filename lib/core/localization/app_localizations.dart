@@ -14,6 +14,9 @@ class AppLocalizations {
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
       'app_title': 'Smart Plant Manager',
+      'app_developer': 'App Developer',
+      'close': 'Close',
+      'licenses': 'Licenses',
       'plants': 'Plants',
       'fertilizers': 'Fertilizers',
       'schedules': 'Schedules',
@@ -62,7 +65,9 @@ class AppLocalizations {
       'upcoming_reminders': 'Upcoming Reminders',
       'recently_fertilized': 'Recently Fertilized',
       'no_plants': 'No plants yet',
+      'no_plants_found': 'No plants found',
       'no_fertilizers': 'No fertilizers yet',
+      'no_fertilizers_found': 'No fertilizers found',
       'no_schedules': 'No schedules yet',
       'no_logs': 'No logs yet',
       'edit': 'Edit',
@@ -75,15 +80,19 @@ class AppLocalizations {
       'confidence': 'Confidence',
       'about': 'About',
       'backup_restore': 'Backup & Restore',
+      'backup_restore_subtitle': 'Export/Import app data',
       'data_summary': 'Data Summary',
       'create_backup': 'Create Backup',
       'restore_backup': 'Restore Backup',
       'backup_created': 'Backup created successfully',
-      'restore_warning': 'This will add data from the backup file. Existing data will remain. Continue?',
+      'restore_warning_destructive': 'This will REPLACE all current data with the data from the backup file. This action cannot be undone. Continue?',
       'restore': 'Restore',
     },
     'bn': {
       'app_title': 'স্মার্ট প্ল্যান্ট ম্যানেজার',
+      'app_developer': 'অ্যাপ ডেভেলপার',
+      'close': 'বন্ধ করুন',
+      'licenses': 'লাইসেন্স',
       'plants': 'গাছ',
       'fertilizers': 'সার',
       'schedules': 'সময়সূচী',
@@ -132,7 +141,9 @@ class AppLocalizations {
       'upcoming_reminders': 'আসন্ন অনুস্মারক',
       'recently_fertilized': 'সম্প্রতি সার দেওয়া',
       'no_plants': 'এখনও কোন গাছ নেই',
+      'no_plants_found': 'কোনো গাছ পাওয়া যায়নি',
       'no_fertilizers': 'এখনও কোন সার নেই',
+      'no_fertilizers_found': 'কোনো সার পাওয়া যায়নি',
       'no_schedules': 'এখনও কোন সময়সূচী নেই',
       'no_logs': 'এখনও কোন লগ নেই',
       'edit': 'সম্পাদনা',
@@ -145,11 +156,12 @@ class AppLocalizations {
       'confidence': 'আত্মবিশ্বাস',
       'about': 'সম্পর্কে',
       'backup_restore': 'ব্যাকআপ ও রিস্টোর',
+      'backup_restore_subtitle': 'অ্যাপ ডেটা এক্সপোর্ট/ইম্পোর্ট করুন',
       'data_summary': 'ডেটা সারাংশ',
       'create_backup': 'ব্যাকআপ তৈরি করুন',
       'restore_backup': 'ব্যাকআপ রিস্টোর করুন',
       'backup_created': 'ব্যাকআপ সফলভাবে তৈরি হয়েছে',
-      'restore_warning': 'এটি ব্যাকআপ ফাইল থেকে ডেটা যোগ করবে। বিদ্যমান ডেটা অপরিবর্তিত থাকবে। চালিয়ে যাবেন?',
+      'restore_warning_destructive': 'এটি আপনার বর্তমান সমস্ত ডেটা মুছে ফেলবে এবং ব্যাকআপ ফাইল থেকে ডেটা পুনরুদ্ধার করবে। এই কাজটি আর ফেরানো যাবে না। আপনি কি রিস্টোর দিতে চান?',
       'restore': 'রিস্টোর',
     },
   };
@@ -173,4 +185,3 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
-

@@ -51,12 +51,15 @@ class BackupService {
   /// Restore data from a selected backup file
   static Future<Map<String, int>?> restoreFromBackup() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
+      type: FileType.any, // Use FileType.any for better compatibility
     );
 
     if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
+      final path = result.files.single.path!;
+      if (!path.toLowerCase().endsWith('.json')) {
+        throw Exception('Invalid file type. Please select a .json backup file.');
+      }
+      final file = File(path);
       final jsonData = await file.readAsString();
       return await importData(jsonData);
     }

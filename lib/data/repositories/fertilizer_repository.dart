@@ -34,7 +34,10 @@ class FertilizerRepository {
     await _box.delete(id);
   }
 
-  Stream<List<FertilizerModel>> watchFertilizers() {
-    return _box.watch().map((_) => _box.values.toList());
+  Stream<List<FertilizerModel>> watchFertilizers() async* {
+    yield _box.values.toList();
+    await for (final _ in _box.watch()) {
+      yield _box.values.toList();
+    }
   }
 }

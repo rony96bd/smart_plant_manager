@@ -136,15 +136,59 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           // About Section
           ListTile(
-            leading: const Icon(Icons.info),
+            leading: const Icon(Icons.info_outline),
             title: Text(localizations?.translate('about') ?? 'About'),
-            subtitle: const Text('Smart Plant Manager v1.0.0'),
             onTap: () {
-              showAboutDialog(
+              showDialog(
                 context: context,
-                applicationName: localizations?.translate('app_title') ?? 'Smart Plant Manager',
-                applicationVersion: '1.0.0',
-                applicationIcon: Image.asset('assets/images/App_Icon.png', height: 48),
+                builder: (context) {
+                  return AlertDialog(
+                    contentPadding: const EdgeInsets.all(24),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset('assets/images/App_Logo.png', height: 60),
+                        const SizedBox(height: 16),
+                        Text(
+                          localizations?.translate('app_title') ?? 'Smart Plant Manager',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        const Text('Version 1.0.0'),
+                        const SizedBox(height: 24),
+                        const Divider(),
+                        const SizedBox(height: 24),
+                        const CircleAvatar(
+                          radius: 50,
+                          backgroundImage: AssetImage('assets/images/developer.jpg'),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Rakib Uddin Rony',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          localizations?.translate('app_developer') ?? 'App Developer',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          showLicensePage(context: context);
+                        },
+                        child: Text(localizations?.translate('licenses') ?? 'Licenses'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text(localizations?.translate('close') ?? 'Close'),
+                      )
+                    ],
+                  );
+                },
               );
             },
           ),
